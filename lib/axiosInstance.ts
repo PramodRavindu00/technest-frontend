@@ -50,11 +50,17 @@ api.interceptors.request.use(
 //response interceptor
 api.interceptors.response.use(
   (response) => response,
+  //intercepting errors
   async (error: AxiosError) => {
     const originalRequest = error.config;
 
-    // return early if no request config, or is public or already a retried one
-    if (!originalRequest || originalRequest.public || originalRequest._retry) {
+    // return early if no request config, or is public or already a retried one or its refresh endpoints
+    if (
+      !originalRequest ||
+      originalRequest.public ||
+      originalRequest._retry ||
+      originalRequest?.url?.includes("/auth/refresh")
+    ) {
       return Promise.reject(error);
     }
 
@@ -62,7 +68,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // another request is already refreshing — queue this one
+    // if another request is already refreshing — queue current request
     if (isRefreshing) {
       return new Promise<string>((resolve, reject) => {
         failedQueue.push({ resolve, reject });
@@ -72,12 +78,14 @@ api.interceptors.response.use(
       });
     }
 
+    // mark as request retried and request is refreshing
     originalRequest._retry = true;
     isRefreshing = true;
 
     try {
       //use the token refresh service
-      const newToken = await authService.refresh();
+      const refreshResponse = await authService.refresh();
+      const newToken = refreshResponse?.accessToken;
 
       //queue becomes null if refresh becomes successed
       processQueue(null, newToken);

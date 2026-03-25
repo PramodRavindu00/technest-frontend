@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { Sidebar, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import Link from "next/link";
 
 const Home = () => {
   return (
     <div>
-      <Button>
-        <Link href={"/login"}>Go to Login</Link>
-      </Button>
+ 
+  
+   
     </div>
   );
 };
